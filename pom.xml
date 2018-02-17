@@ -34,6 +34,12 @@
             <version>${spark.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-mllib_2.11</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.scalatest/scalatest_2.11 -->
         <dependency>
             <groupId>org.scalatest</groupId>
