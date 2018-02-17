@@ -3,7 +3,7 @@
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 import org.apache.spark.ml.regression.LinearRegression
-import org.apache.spark.sql.functions.udf
+import org.apache.spark.sql.functions.{udf, _}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object SimpleApp {
@@ -16,9 +16,17 @@ object SimpleApp {
 
   def createDf(spark: SparkSession) = {
     //Reading Inpatient_prospective_Payment_2015
-    val df = spark.read
+    val df1 = spark.read
       .option("header", "true") //reading the headers
       .csv(getClass.getClassLoader.getResource("train.csv").getPath)
+
+//    import df1.sparkSession.implicits._
+
+    val df2 = spark.read
+      .option("header", "true") //reading the headers
+      .csv(getClass.getClassLoader.getResource("test.csv").getPath)
+
+    val df = df1.withColumn("istest", lit(0)).union(df2.withColumn("istest", lit(1)))
 
     df.printSchema()
     applyLinearRegression(df
@@ -27,12 +35,16 @@ object SimpleApp {
   }
 
   val toDouble = udf((str: String) => {
-    str.toDouble
+    if (str != null) {
+      str.toDouble
+    } else {
+      0
+    }
   })
 
   def stringIndex(df: DataFrame, inCol: String, outCol: String) = {
     val indexer = new StringIndexer().setInputCol(inCol).setOutputCol(outCol)
-      .setHandleInvalid("skip")
+      .setHandleInvalid("keep")
     indexer.fit(df).transform(df)
   }
 
@@ -49,13 +61,10 @@ object SimpleApp {
       "job_code_num")).setOutputCol("features")
 
     val df7 = assembler.transform(df6)
+    println("df7.count(): " + df7.count())
 
-    val splitSeed = 5043
-    val Array(trainingDataOrig, testDataOrig) = df7.randomSplit(Array(0.7, 0.3), splitSeed)
-
-    val trainingData = trainingDataOrig.cache()
-    val testData = testDataOrig.cache()
-    import trainingData.sparkSession.implicits._
+    val trainingData = df7.where(df("istest").equalTo(0))
+    val testData = df7.where(df("istest").equalTo(1))
 
     val lr = new LinearRegression()
 
