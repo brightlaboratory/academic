@@ -2,7 +2,7 @@
 
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
-import org.apache.spark.ml.regression.LinearRegression
+import org.apache.spark.ml.regression.{LinearRegression, RandomForestRegressor}
 import org.apache.spark.sql.functions.{udf, _}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -66,15 +66,22 @@ object SimpleApp {
     val trainingData = df7.where(df("istest").equalTo(0))
     val testData = df7.where(df("istest").equalTo(1))
 
-    val lr = new LinearRegression()
+//    val lr = new LinearRegression()
+    val lr = new RandomForestRegressor()
+      .setMaxBins(10000)
+
 
     // Fit the model
     val lrModel = lr.setLabelCol("salary_num").fit(trainingData)
-    println("lrModel: " + lrModel)
+//    println("lrModel: " + lrModel.toDebugString)
+    println("lrModel.featureImportances: " + lrModel.featureImportances)
 
     // Apply the model on testData
     val predictions_lr = lrModel.transform(testData).cache()
     predictions_lr.show(5, truncate = false)
     predictions_lr.printSchema()
+
+    predictions_lr.select("id", "prediction").withColumnRenamed("prediction", "salary")
+      .coalesce(1).write.option("header", "true").csv("sampleSubmissionRF3.csv")
   }
 }
