@@ -34,6 +34,7 @@ class SimpleAppSpecs extends FlatSpec with BeforeAndAfter {
   }
 
   "This test" should "count words" in {
-    SimpleApp.createDf(sparkSession)
+//    SimpleApp.createDf(sparkSession)
+    SimpleApp.createDf2(sparkSession)
   }
 }

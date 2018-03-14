@@ -1,6 +1,7 @@
 /* SimpleApp.scala */
 
 import org.apache.spark.SparkContext
+import org.apache.spark.ml.classification.RandomForestClassifier
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 import org.apache.spark.ml.regression.{LinearRegression, RandomForestRegressor}
 import org.apache.spark.sql.functions.{udf, _}
@@ -32,6 +33,30 @@ object SimpleApp {
     applyLinearRegression(df
       .withColumn("salary_num", toDouble(df("salary")))
     )
+  }
+
+  def createDf2(spark: SparkSession) = {
+    //Reading Inpatient_prospective_Payment_2015
+    val df1 = spark.read
+      .option("header", "true") //reading the headers
+      .csv(getClass.getClassLoader.getResource("solution.csv").getPath)
+
+    //    import df1.sparkSession.implicits._
+
+//    df1.printSchema()
+    processRatings(df1)
+  }
+
+  def processRatings(df: DataFrame) = {
+    val df2 = df.drop("Age?").drop("Gender").drop("Preferred Genres")
+    df2.columns.foreach(v => println("COLUMN: " + v))
+
+    val df3 = df2.columns.toBuffer.foldLeft(df2)((current, c) =>current
+      .withColumn(c, col(c).cast("double")))
+
+    df3.take(10).foreach(v => println("ROW: " + v))
+    df3.printSchema()
+    df3.describe().show()
   }
 
   val toDouble = udf((str: String) => {
